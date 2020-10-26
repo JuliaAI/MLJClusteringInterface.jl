@@ -191,7 +191,7 @@ metadata_model(
     output = MMI.Table(Continuous),
     weights = false,
     descr = KMedoidsDescription,
-    path = "$(PKG).KMediods"
+    path = "$(PKG).KMedoids"
 )
 
 end # module
