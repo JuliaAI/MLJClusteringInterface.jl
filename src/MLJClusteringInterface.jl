@@ -9,7 +9,7 @@ module MLJClusteringInterface
 # IMPORTS
 import Clustering
 import MLJModelInterface
-import MLJModelInterface: Continuous, Count, Finite, MulticlassTable, OrderedFactor,
+import MLJModelInterface: Continuous, Count, Finite, Multiclass, Table, OrderedFactor,
     @mlj_model, metadata_model, metadata_pkg
 
 using Distances
