@@ -41,6 +41,8 @@ const KMFields ="""
     * `metric`  : distance metric to use
 """
 
+const PKG = "MLJClusteringInterface"
+
 ####
 #### KMeans
 ####
