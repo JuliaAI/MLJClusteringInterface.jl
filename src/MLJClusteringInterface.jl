@@ -181,7 +181,8 @@ metadata_model(
     input = MMI.Table(Continuous),
     output = MMI.Table(Continuous),
     weights = false,
-    descr = KMeansDescription
+    descr = KMeansDescription,
+    path = "$(PKG).KMeans"
 )
 
 metadata_model(
@@ -189,7 +190,8 @@ metadata_model(
     input = MMI.Table(Continuous),
     output = MMI.Table(Continuous),
     weights = false,
-    descr = KMedoidsDescription
+    descr = KMedoidsDescription,
+    path = "$(PKG).KMediods"
 )
 
 end # module
