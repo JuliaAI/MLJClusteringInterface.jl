@@ -28,14 +28,8 @@ X, y = @load_crabs
     p = predict(barekm, fitresult, X)
     @test argmin(R[1, :]) == p[1]
     @test argmin(R[10, :]) == p[10]
-	
-    infos = info_dict(barekm)
-    @test infos[:package_name] == "Clustering"
-    @test infos[:is_pure_julia]
-    @test infos[:package_license] == "MIT"
-    @test infos[:input_scitype] == Table(Continuous)
-    @test infos[:output_scitype] == Table(Continuous)
-    infos[:docstring]
+
+
 end
 
 ####
@@ -55,7 +49,4 @@ end
     )
     p = predict(barekm, fitresult, X)
     @test all(report.assignments .== p)
-    infos = info_dict(barekm)
-    @test infos[:input_scitype] == Table(Continuous)
-    @test infos[:output_scitype] == Table(Continuous)
 end
