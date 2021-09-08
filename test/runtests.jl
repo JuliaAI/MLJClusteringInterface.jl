@@ -50,3 +50,15 @@ end
     p = predict(barekm, fitresult, X)
     @test all(report.assignments .== p)
 end
+
+####
+#### HierarchicalClustering
+####
+
+@testset "HierarchicalClustering" begin
+    barehc = HierarchicalClustering(linkage = :complete)
+    fitresult, cache, report = fit(barehc, 1, X)
+    barehc.k = 2
+    p = predict(barehc, fitresult, X)
+    @test mean(int(y) .== p) > .5 # that's a somewhat silly test...
+end
