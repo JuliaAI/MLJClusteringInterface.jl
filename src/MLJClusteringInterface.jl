@@ -13,10 +13,11 @@ import MLJModelInterface: Continuous, Count, Finite, Multiclass, Table, OrderedF
     @mlj_model, metadata_model, metadata_pkg
 
 using Distances
+using NearestNeighbors
 
 # ===================================================================
 ## EXPORTS
-export KMeans, KMedoids
+export KMeans, KMedoids, DBSCAN
 
 # ===================================================================
 ## CONSTANTS
@@ -122,6 +123,81 @@ function MMI.predict(model::Union{KMeans,KMedoids}, fitresult, Xnew)
         end
     end
     return cluster_labels[pred]
+end
+
+####
+#### DBSCAN
+####
+"""
+DBSCAN(; kwargs...)
+
+$DBSCANDescription
+
+$DBFields
+
+See also the
+[package documentation](https://juliastats.org/Clustering.jl/stable/dbscan.html).
+"""
+@mlj_model mutable struct DBSCAN <: MMI.Unsupervised
+    radius::Real = 1.0::(_ > 0)
+    leafsize::Int = 20::(_ > 0)
+    min_neighbors::Int = 1::(_ > 0)
+    min_cluster_size::Int = 1::(_ > 0)
+end
+
+function MMI.fit(model::DBSCAN, verbosity::Int, X)
+    Xarray   = MMI.matrix(X, transpose=true)
+    clusters = Cl.dbscan(Xarray, model.radius;
+                       leafsize=model.leafsize,
+                       min_neighbors=model.min_neighbors,
+                       min_cluster_size=model.min_cluster_size)
+
+    # assignments and point types
+    npoints     = size(Xarray, 2)
+    assignments = zeros(Int, npoints)
+    pointtypes  = zeros(Int, npoints)
+    for (k, cluster) in enumerate(clusters)
+        for i in cluster.core_indices
+            assignments[i] = k
+            pointtypes[i] = 1
+        end
+        for i in cluster.boundary_indices
+            assignments[i] = k
+            pointtypes[i] = 0
+        end
+    end
+
+    result = (Xarray, assignments, pointtypes)
+    cache  = nothing
+    report = nothing
+    result, cache, report
+end
+
+MMI.fitted_params(::DBSCAN, fitresult) = (assignments=fitresult[1][2],
+                                          pointtypes=fitresult[1][3])
+
+function MMI.transform(::DBSCAN, fitresult, X)
+    # table with assignments in first column and
+    # point types in second column (core=1 vs. boundary=0)
+    _, assignments, pointtypes = fitresult[1]
+    X̃ = [assignments pointtypes]
+    MMI.table(X̃, prototype=X)
+end
+
+function MMI.predict(::DBSCAN, fitresult, Xnew)
+    X1, assignments, _ = fitresult[1]
+    X2 = MMI.matrix(Xnew, transpose=true)
+
+    labels = MMI.categorical(assignments)
+
+    # construct KDtree with points in X1
+    tree = KDTree(X1, Euclidean())
+
+    # find nearest neighbor of X2 in X1
+    inds, _ = nn(tree, X2)
+
+    # return assignment of nearest neighbor
+    labels[inds]
 end
 
 ####
@@ -324,5 +400,13 @@ See also
 KMedoids
 
 
-end # module
+metadata_model(
+    DBSCAN,
+    input = MMI.Table(Continuous),
+    output = MMI.Table(Continuous),
+    weights = false,
+    descr = DBSCANDescription,
+    path = "$(PKG).DBSCAN"
+)
 
+end # module
