@@ -48,8 +48,39 @@ end
 end
 
 @testset "DBSCAN" begin
-   dbscan = DBSCAN() 
-   fitresult = fit(dbscan, 1, X)
-   A = transform(dbscan, fitresult, X)
-   p = predict(dbscan, fitresult, X)
+    # five spot pattern
+    X = [
+        0.0 0.0
+        1.0 0.0
+        1.0 1.0
+        0.0 1.0
+        0.5 0.5
+    ]
+
+    # radius < √2 ==> 5 clusters
+    dbscan = DBSCAN(radius=0.1) 
+    fitresult = fit(dbscan, 1, X)
+    A = transform(dbscan, fitresult, X)
+    p = predict(dbscan, fitresult, X)
+    @test size(matrix(A)) == (5, 2)
+    @test A.x2 == [0,0,0,0,0]
+    @test Set(p) == Set(unique(p))
+
+    # radius > √2 ==> 1 cluster
+    dbscan = DBSCAN(radius=√2+eps()) 
+    fitresult = fit(dbscan, 1, X)
+    A = transform(dbscan, fitresult, X)
+    p = predict(dbscan, fitresult, X)
+    @test size(matrix(A)) == (5, 2)
+    @test A.x2 == [1,1,1,1,1]
+    @test unique(p) == [1]
+
+    # radius < √2 && min_cluster_size = 2 ==> all points are noise
+    dbscan = DBSCAN(radius=0.1, min_cluster_size=2) 
+    fitresult = fit(dbscan, 1, X)
+    A = transform(dbscan, fitresult, X)
+    p = predict(dbscan, fitresult, X)
+    @test size(matrix(A)) == (5, 2)
+    @test A.x2 == [0,0,0,0,0]
+    @test unique(p) == [0]
 end
