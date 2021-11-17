@@ -181,8 +181,6 @@ $HierarchicalClusteringDescription
 * `linkage` : `:single` (default), `:average`, `:complete`, `:ward`, `:ward_presquared`
 * `metric` : distance metric to use (`SqEuclidean()` by default).
 * `branchorder` : algorithm to order leaves and brancges (`:r` by default, `:barjoseph` or `:optimal`)
-* `k = 3` : number of clusters to use for prediction (can be changed after fitting).
-* `h = nothing` : the height at which the tree is cut during prediction (can be changed after fitting).
 
 See also
 [package documentation](https://juliastats.org/Clustering.jl/stable/hclust.html).
@@ -192,33 +190,36 @@ See also
 using MLJ, MLJClusteringInterface, DataFrames, StatsPlots
 data = DataFrame([randn(50, 2) .+ [2 2]; randn(50, 2) .+ [-3 0]], :auto)
 scatter(data.x1, data.x2) # plot data
-mach = fit!(machine(HierarchicalClustering(), data))
-plot(report(mach)) # plot dendrogram
-mach.model.k = 2
-predictions = predict(mach)
-scatter(data.x1, data.x2, color = predictions) # plot data with class labels
+hc = MLJ.transform(HierarchicalClustering(linkage = :complete), data)
+hc(h = 25) # show cluster assignments for cutting height h = 25
+hc(k = 2) # show cluster assignments for number of clusters k = 2
+plot(hc.dendrogram) # plot dendrogram
+scatter(data.x1, data.x2, color = hc(k = 2)) # plot data with class labels
 ```
 """
-@mlj_model mutable struct HierarchicalClustering <: MMI.Unsupervised
+@mlj_model mutable struct HierarchicalClustering <: MMI.Static
     linkage::Symbol = :single :: (_ ∈ (:single, :average, :complete, :ward, :ward_presquared))
     metric::SemiMetric = SqEuclidean()
     branchorder::Symbol = :r :: (_ ∈ (:r, :barjoseph, :optimal))
-    k::Union{Int, Nothing} = 3
-    h::Union{Float64, Nothing} = nothing
+end
+mutable struct HierarchicalClusteringResult{T}
+    dendrogram::T
+end
+function (hc::HierarchicalClusteringResult)(; h = nothing, k = 3)
+    Cl.cutree(hc.dendrogram, k = k, h = h)
+end
+function Base.show(io::IO, hc::HierarchicalClusteringResult)
+    println(io, "Hierarchical clustering object")
+    println(io, "Call it with `h = height` or `k = number of clusters` to get the cluster assignments")
+    println(io, "(see also docstring of HierarchicalClustering).")
 end
 
-function MMI.fit(model::HierarchicalClustering, verbosity::Int, X)
+function MMI.transform(model::HierarchicalClustering, X)
     Xarray = MMI.matrix(X)
     # all the pairwise distances
     d = pairwise(model.metric, Xarray, dims = 1) # n x n
-    fit_result = Cl.hclust(d, linkage = model.linkage, branchorder = model.branchorder)
-    cache = nothing
-    report = fit_result
-    return fit_result, cache, report
-end
-
-function MMI.predict(model::HierarchicalClustering, fitresult, ::Any)
-    Cl.cutree(fitresult; k = model.k, h = model.h)
+    dendrogram = Cl.hclust(d, linkage = model.linkage, branchorder = model.branchorder)
+    HierarchicalClusteringResult(dendrogram)
 end
 
 ####
@@ -256,7 +257,6 @@ metadata_model(
 metadata_model(
     HierarchicalClustering,
     input = MMI.Table(Continuous),
-    output = MMI.Table(Continuous),
     weights = false,
     descr = HierarchicalClusteringDescription,
     path = "$(PKG).HierarchicalClustering"

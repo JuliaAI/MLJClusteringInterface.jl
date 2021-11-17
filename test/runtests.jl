@@ -57,8 +57,6 @@ end
 
 @testset "HierarchicalClustering" begin
     barehc = HierarchicalClustering(linkage = :complete)
-    fitresult, cache, report = fit(barehc, 1, X)
-    barehc.k = 2
-    p = predict(barehc, fitresult, X)
-    @test mean(int(y) .== p) > .5 # that's a somewhat silly test...
+    hc = transform(barehc, X)
+    @test mean(int(y) .== hc(k = 2)) > .5 # that's a somewhat silly test...
 end
