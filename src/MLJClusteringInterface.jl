@@ -23,9 +23,6 @@ export KMeans, KMedoids
 # Define constants for easy referencing of packages
 const MMI = MLJModelInterface
 const Cl = Clustering
-
-
-
 const PKG = "MLJClusteringInterface"
 
 ####
@@ -143,6 +140,7 @@ metadata_pkg.(
 
 metadata_model(
     KMeans,
+    human_name = "K-means clusterer",
     input = MMI.Table(Continuous),
     output = MMI.Table(Continuous),
     weights = false,
@@ -151,6 +149,7 @@ metadata_model(
 
 metadata_model(
     KMedoids,
+    human_name = "K-medoids clusterer",
     input = MMI.Table(Continuous),
     output = MMI.Table(Continuous),
     weights = false,
@@ -159,38 +158,49 @@ metadata_model(
 """
 $(MMI.doc_header(KMeans))
 
+[K-means](http://en.wikipedia.org/wiki/K_means) is a classical method for
+clustering or vector quantization. It produces a fixed number of clusters,
+each associated with a *center* (also known as a *prototype*), and each data
+point is assigned to a cluster with the nearest center.
 
-`KMeans`: The K-Means algorithm finds K centroids corresponding to K clusters in
-the data. The clusters are assumed to be elliptical, should be used with a euclidean distance metric
+From a mathematical standpoint, K-means is a coordinate descent
+algorithm that solves the following optimization problem:
+
+```math
+\\text{minimize} \\ \\sum_{i=1}^n \\| \\mathbf{x}_i - \\boldsymbol{\\mu}_{z_i} \\|^2 \\ \\text{w.r.t.} \\ (\\boldsymbol{\\mu}, z)
+```
+Here, ``\\boldsymbol{\\mu}_k`` is the center of the ``k``-th cluster, and
+``z_i`` is an index of the cluster for ``i``-th point ``\\mathbf{x}_i``.
+
 
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
 
-    mach = machine(model, X, y)
+    mach = machine(model, X)
 
-Where
+Here:
 
-- `X`: is any table of input features (eg, a `DataFrame`) whose columns
-  are of scitype `Continuous`; check the scitype with `schema(X)`
-
-- `y`: is the target, which can be any `AbstractVector` whose element
-  scitype is `Count`; check the scitype with `schema(y)`
+- `X` is any table of input features (eg, a `DataFrame`) whose columns
+  are of scitype `Continuous`; check column  scitypes with `schema(X)`.
 
 Train the machine using `fit!(mach, rows=...)`.
 
 # Hyper-parameters
 
 - `k=3`: The number of centroids to use in clustering.
-- `metric::SemiMetric=SqEuclidean`: The metric used to calculate the clustering distance
-  matrix
+
+- `metric::SemiMetric=Distances.SqEuclidean`: The metric used to calculate the
+  clustering. Must have type `PreMetric` from Distances.jl.
+
 
 # Operations
 
-- `predict(mach, Xnew)`: return predictions of the target given new
+- `predict(mach, Xnew)`: return cluster label assignments, given new
    features `Xnew` having the same Scitype as `X` above.
+
 - `transform(mach, Xnew)`: instead return the mean pairwise distances from
-   new samples to the cluster centers
+   new samples to the cluster centers.
 
 # Fitted parameters
 
@@ -203,72 +213,72 @@ The fields of `fitted_params(mach)` are:
 The fields of `report(mach)` are:
 
 - `assignments`: The cluster assignments of each point in the training data.
+
 - `cluster_labels`: The labels assigned to each cluster.
 
 # Examples
 
 ```
 using MLJ
-using Distances
-using Test
 KMeans = @load KMeans pkg=Clustering
 
-X, y = @load_iris
+table = load_iris()
+y, X = unpack(table, ==(:target), rng=123)
 model = KMeans(k=3)
 mach = machine(model, X) |> fit!
 
 yhat = predict(mach, X)
-@test yhat == report(mach).assignments
+@assert yhat == report(mach).assignments
 
 compare = zip(yhat, y) |> collect;
 compare[1:8] # clusters align with classes
 
 center_dists = transform(mach, fitted_params(mach).centers')
 
-@test center_dists[1][1] == 0.0
-@test center_dists[2][2] == 0.0
-@test center_dists[3][3] == 0.0
+@assert center_dists[1][1] == 0.0
+@assert center_dists[2][2] == 0.0
+@assert center_dists[3][3] == 0.0
 ```
 
 See also
 [`KMedoids`](@ref)
 """
 KMeans
+
 """
 $(MMI.doc_header(KMedoids))
 
-`KMedoids`: The K-Medoids algorithm finds K centroids corresponding to K clusters in the
-data. Unlike K-Means, the centroids are found among data points themselves. Clusters
-are not assumed to be elliptical. Should be used with a non-euclidean distance metric
+[K-medoids](http://en.wikipedia.org/wiki/K-medoids) is a clustering algorithm that works by
+finding ``k`` data points (called *medoids*) such that the total distance between each data
+point and the closest *medoid* is minimal.
 
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
 
-    mach = machine(model, X, y)
+    mach = machine(model, X)
 
-Where
+Here:
 
-- `X`: is any table of input features (eg, a `DataFrame`) whose columns
-  are of scitype `Continuous`; check the scitype with `schema(X)`
-
-- `y`: is the target, which can be any `AbstractVector` whose element
-  scitype is `Count`; check the scitype with `schema(y)`
+- `X` is any table of input features (eg, a `DataFrame`) whose columns
+  are of scitype `Continuous`; check column scitypes with `schema(X)`
 
 Train the machine using `fit!(mach, rows=...)`.
 
 # Hyper-parameters
 
 - `k=3`: The number of centroids to use in clustering.
-- `metric::SemiMetric=SqEuclidean`: The metric used to calculate the clustering distance
-  matrix
+
+- `metric::SemiMetric=Distances.SqEuclidean`: The metric used to calculate the
+  clustering. Must have type `PreMetric` from Distances.jl.
 
 # Operations
 
-- `predict(mach, Xnew)`: return predictions of the target given new
+- `predict(mach, Xnew)`: return cluster label assignments, given new
    features `Xnew` having the same Scitype as `X` above.
+
 - `transform(mach, Xnew)`: instead return the mean pairwise distances from
-   new samples to the cluster centers
+   new samples to the cluster centers.
 
 # Fitted parameters
 
@@ -281,32 +291,31 @@ The fields of `fitted_params(mach)` are:
 The fields of `report(mach)` are:
 
 - `assignments`: The cluster assignments of each point in the training data.
+
 - `cluster_labels`: The labels assigned to each cluster.
 
 # Examples
 
 ```
 using MLJ
-using Test
 KMedoids = @load KMedoids pkg=Clustering
 
-X, y = @load_iris
+table = load_iris()
+y, X = unpack(table, ==(:target), rng=123)
 model = KMedoids(k=3)
 mach = machine(model, X) |> fit!
 
 yhat = predict(mach, X)
-@test yhat == report(mach).assignments
+@assert yhat == report(mach).assignments
 
 compare = zip(yhat, y) |> collect;
 compare[1:8] # clusters align with classes
 
 center_dists = transform(mach, fitted_params(mach).medoids')
 
-@test center_dists[1][1] == 0.0
-@test center_dists[2][2] == 0.0
-@test center_dists[3][3] == 0.0
-
-# we can also
+@assert center_dists[1][1] == 0.0
+@assert center_dists[2][2] == 0.0
+@assert center_dists[3][3] == 0.0
 ```
 
 See also
