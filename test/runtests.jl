@@ -3,6 +3,7 @@ import Distances
 import LinearAlgebra: norm
 
 using MLJBase
+using MLJTestIntegration
 using MLJClusteringInterface
 using Random: seed!
 using Test
@@ -10,9 +11,8 @@ using Test
 seed!(132442)
 X, y = @load_crabs
 
-####
-#### KMEANS
-####
+
+# # K_MEANS
 
 @testset "KMeans" begin
     barekm = KMeans()
@@ -28,9 +28,8 @@ X, y = @load_crabs
     @test argmin(R[10, :]) == p[10]
 end
 
-####
-#### KMEDOIDS
-####
+
+# # K_MEDOIDS
 
 @testset "KMedoids" begin
     barekm = KMedoids()
@@ -47,7 +46,11 @@ end
     @test all(report.assignments .== p)
 end
 
+
+# # DBSCAN
+
 @testset "DBSCAN" begin
+
     # five spot pattern
     X = [
         0.0 0.0
@@ -55,32 +58,50 @@ end
         1.0 1.0
         0.0 1.0
         0.5 0.5
-    ]
+    ] |> MLJBase.table
 
     # radius < √2 ==> 5 clusters
-    dbscan = DBSCAN(radius=0.1) 
-    fitresult = fit(dbscan, 1, X)
-    A = transform(dbscan, fitresult, X)
-    p = predict(dbscan, fitresult, X)
-    @test size(matrix(A)) == (5, 2)
-    @test A.x2 == [0,0,0,0,0]
-    @test Set(p) == Set(unique(p))
+    dbscan = DBSCAN(radius=0.1)
+    yhat1, report1 = predict(dbscan, nothing, X)
+    @test report1.nclusters == 5
+    @test report1.point_types == [0,0,0,0,0]
+    @test Set(yhat1) == Set(unique(yhat1))
+
+    # DbscanCluster fields:
+    @test propertynames(report1.clusters[1]) == (:size, :core_indices, :boundary_indices)
 
     # radius > √2 ==> 1 cluster
-    dbscan = DBSCAN(radius=√2+eps()) 
-    fitresult = fit(dbscan, 1, X)
-    A = transform(dbscan, fitresult, X)
-    p = predict(dbscan, fitresult, X)
-    @test size(matrix(A)) == (5, 2)
-    @test A.x2 == [1,1,1,1,1]
-    @test unique(p) == [1]
+    dbscan = DBSCAN(radius=√2+eps())
+    yhat, report = predict(dbscan, nothing, X)
+    @test report.nclusters == 1
+    @test report.point_types == [1,1,1,1,1]
+    @test length(unique(yhat)) == 1
 
     # radius < √2 && min_cluster_size = 2 ==> all points are noise
-    dbscan = DBSCAN(radius=0.1, min_cluster_size=2) 
-    fitresult = fit(dbscan, 1, X)
-    A = transform(dbscan, fitresult, X)
-    p = predict(dbscan, fitresult, X)
-    @test size(matrix(A)) == (5, 2)
-    @test A.x2 == [0,0,0,0,0]
-    @test unique(p) == [0]
+    dbscan = DBSCAN(radius=0.1, min_cluster_size=2)
+    yhat, report = predict(dbscan, nothing, X)
+    @test report.nclusters == 0
+    @test report.point_types == [-1,-1,-1,-1,-1]
+    @test length(unique(yhat)) == 1
+
+    # MLJ integration:
+    model = DBSCAN(radius=0.1)
+    mach = machine(model) # no training data
+    yhat = predict(mach, X)
+    @test yhat == yhat1
+    @test MLJBase.report(mach).point_types == report1.point_types
+    @test MLJBase.report(mach).nclusters == report1.nclusters
+
+end
+
+@testset "MLJ interface" begin
+    models = [KMeans, KMedoids, DBSCAN]
+    failures, summary = MLJTestIntegration.test(
+        models,
+        X;
+        mod=@__MODULE__,
+        verbosity=0,
+        throw=false, # set to true to debug
+    )
+    @test isempty(failures)
 end

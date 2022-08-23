@@ -13,7 +13,6 @@ import MLJModelInterface: Continuous, Count, Finite, Multiclass, Table, OrderedF
     @mlj_model, metadata_model, metadata_pkg
 
 using Distances
-using NearestNeighbors
 
 # ===================================================================
 ## EXPORTS
@@ -26,18 +25,13 @@ const MMI = MLJModelInterface
 const Cl = Clustering
 const PKG = "MLJClusteringInterface"
 
-####
-#### KMeans
-####
+
+# # K_MEANS
 
 @mlj_model mutable struct KMeans <: MMI.Unsupervised
     k::Int = 3::(_ ≥ 2)
     metric::SemiMetric = SqEuclidean()
 end
-
-####
-#### KMeans
-####
 
 function MMI.fit(model::KMeans, verbosity::Int, X)
     # NOTE: using transpose here to get a LinearAlgebra.Transpose object
@@ -66,6 +60,8 @@ function MMI.transform(model::KMeans, fitresult, X)
     )
     return MMI.table(X̃, prototype=X)
 end
+
+# # K_MEDOIDS
 
 @mlj_model mutable struct KMedoids <: MMI.Unsupervised
     k::Int = 3::(_ ≥ 2)
@@ -101,9 +97,8 @@ function MMI.transform(model::KMedoids, fitresult, X)
     return MMI.table(X̃, prototype=X)
 end
 
-####
-#### Predict methods
-####
+
+# # PREDICT FOR K_MEANS AND K_MEDOIDS
 
 function MMI.predict(model::Union{KMeans,KMedoids}, fitresult, Xnew)
     locations, cluster_labels = fitresult
@@ -125,84 +120,55 @@ function MMI.predict(model::Union{KMeans,KMedoids}, fitresult, Xnew)
     return cluster_labels[pred]
 end
 
-####
-#### DBSCAN
-####
-"""
-DBSCAN(; kwargs...)
+# # DBSCAN
 
-$DBSCANDescription
-
-$DBFields
-
-See also the
-[package documentation](https://juliastats.org/Clustering.jl/stable/dbscan.html).
-"""
-@mlj_model mutable struct DBSCAN <: MMI.Unsupervised
+@mlj_model mutable struct DBSCAN <: MMI.Static
     radius::Real = 1.0::(_ > 0)
     leafsize::Int = 20::(_ > 0)
     min_neighbors::Int = 1::(_ > 0)
     min_cluster_size::Int = 1::(_ > 0)
 end
 
-function MMI.fit(model::DBSCAN, verbosity::Int, X)
-    Xarray   = MMI.matrix(X, transpose=true)
-    clusters = Cl.dbscan(Xarray, model.radius;
-                       leafsize=model.leafsize,
-                       min_neighbors=model.min_neighbors,
-                       min_cluster_size=model.min_cluster_size)
+# As DBSCAN is `Static`, there is no `fit` to implement.
+
+
+function MMI.predict(model::DBSCAN, ::Nothing, X)
+
+    Xarray   = MMI.matrix(X)'
+
+    # output of core algorithm:
+    clusters = Cl.dbscan(
+        Xarray, model.radius;
+        leafsize=model.leafsize,
+        min_neighbors=model.min_neighbors,
+        min_cluster_size=model.min_cluster_size,
+    )
+    nclusters = length(clusters)
 
     # assignments and point types
     npoints     = size(Xarray, 2)
     assignments = zeros(Int, npoints)
-    pointtypes  = zeros(Int, npoints)
+    point_types  = fill(-1, npoints)
     for (k, cluster) in enumerate(clusters)
         for i in cluster.core_indices
             assignments[i] = k
-            pointtypes[i] = 1
+            point_types[i] = 1
         end
         for i in cluster.boundary_indices
             assignments[i] = k
-            pointtypes[i] = 0
+            point_types[i] = 0
         end
     end
 
-    result = (Xarray, assignments, pointtypes)
-    cache  = nothing
-    report = nothing
-    result, cache, report
+    yhat = MMI.categorical(assignments)
+    report = (; point_types, nclusters, clusters)
+    return yhat, report
 end
 
-MMI.fitted_params(::DBSCAN, fitresult) = (assignments=fitresult[1][2],
-                                          pointtypes=fitresult[1][3])
+MMI.reporting_operations(::Type{<:DBSCAN}) = (:predict,)
 
-function MMI.transform(::DBSCAN, fitresult, X)
-    # table with assignments in first column and
-    # point types in second column (core=1 vs. boundary=0)
-    _, assignments, pointtypes = fitresult[1]
-    X̃ = [assignments pointtypes]
-    MMI.table(X̃, prototype=X)
-end
 
-function MMI.predict(::DBSCAN, fitresult, Xnew)
-    X1, assignments, _ = fitresult[1]
-    X2 = MMI.matrix(Xnew, transpose=true)
-
-    labels = MMI.categorical(assignments)
-
-    # construct KDtree with points in X1
-    tree = KDTree(X1, Euclidean())
-
-    # find nearest neighbor of X2 in X1
-    inds, _ = nn(tree, X2)
-
-    # return assignment of nearest neighbor
-    labels[inds]
-end
-
-####
-#### METADATA
-####
+# # METADATA
 
 metadata_pkg.(
     (KMeans, KMedoids),
@@ -219,7 +185,6 @@ metadata_model(
     human_name = "K-means clusterer",
     input = MMI.Table(Continuous),
     output = MMI.Table(Continuous),
-    weights = false,
     path = "$(PKG).KMeans"
 )
 
@@ -228,9 +193,18 @@ metadata_model(
     human_name = "K-medoids clusterer",
     input = MMI.Table(Continuous),
     output = MMI.Table(Continuous),
-    weights = false,
     path = "$(PKG).KMedoids"
 )
+
+metadata_model(
+    DBSCAN,
+    human_name = "DBSCAN clusterer (density-based spatial clustering of "*
+    "applications with noise)",
+    input = MMI.Table(Continuous),
+    path = "$(PKG).DBSCAN"
+)
+
+
 """
 $(MMI.doc_header(KMeans))
 
@@ -399,14 +373,5 @@ See also
 """
 KMedoids
 
-
-metadata_model(
-    DBSCAN,
-    input = MMI.Table(Continuous),
-    output = MMI.Table(Continuous),
-    weights = false,
-    descr = DBSCANDescription,
-    path = "$(PKG).DBSCAN"
-)
 
 end # module
