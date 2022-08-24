@@ -172,7 +172,7 @@ MMI.reporting_operations(::Type{<:DBSCAN}) = (:predict,)
 # # METADATA
 
 metadata_pkg.(
-    (KMeans, KMedoids),
+    (KMeans, KMedoids, DBSCAN),
     name="Clustering",
     uuid="aaaa29a8-35af-508c-8bc3-b662a17a0fe5",
     url="https://github.com/JuliaStats/Clustering.jl",
@@ -418,7 +418,7 @@ In MLJ or MLJBase, create a machine with
 After calling `predict(mach)`, the fields of `report(mach)`  are:
 
 - `point_types`: A `CategoricalVector` with the DBSCAN point type classification, one
-  element per row of `X`. Elements are either `'C'`" (core), `'B'` (boundary), or `'N'`
+  element per row of `X`. Elements are either `'C'` (core), `'B'` (boundary), or `'N'`
   (noise).
 
 - `nclusters`: The number of clusters (excluding the noise "cluster")
