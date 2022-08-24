@@ -131,7 +131,6 @@ end
 
 # As DBSCAN is `Static`, there is no `fit` to implement.
 
-
 function MMI.predict(model::DBSCAN, ::Nothing, X)
 
     Xarray   = MMI.matrix(X)'
@@ -148,20 +147,22 @@ function MMI.predict(model::DBSCAN, ::Nothing, X)
     # assignments and point types
     npoints     = size(Xarray, 2)
     assignments = zeros(Int, npoints)
-    point_types  = fill(-1, npoints)
+    raw_point_types  = fill('N', npoints)
     for (k, cluster) in enumerate(clusters)
         for i in cluster.core_indices
             assignments[i] = k
-            point_types[i] = 1
+            raw_point_types[i] = 'C'
         end
         for i in cluster.boundary_indices
             assignments[i] = k
-            point_types[i] = 0
+            raw_point_types[i] = 'B'
         end
     end
+    point_types = MMI.categorical(raw_point_types)
+    cluster_labels = unique(assignments)
 
     yhat = MMI.categorical(assignments)
-    report = (; point_types, nclusters, clusters)
+    report = (; point_types, nclusters, cluster_labels, clusters)
     return yhat, report
 end
 
@@ -373,5 +374,107 @@ See also
 """
 KMedoids
 
+"""
+$(MMI.doc_header(DBSCAN))
+
+[DBSCAN](https://en.wikipedia.org/wiki/DBSCAN) is a clustering algorithm that groups
+together points that are closely packed together (points with many nearby neighbors),
+marking as outliers points that lie alone in low-density regions (whose nearest neighbors
+are too far away). More information is available at the [Clustering.jl
+documentation](https://juliastats.org/Clustering.jl/stable/index.html). Use `predict` to
+get cluster assignments. Point types - core, boundary or noise - are accessed from the
+machine report (see below).
+
+This is a static implementation, i.e., it does not generalize to new data instances, and
+there is no training data. For clusterers that do generalize, see [`KMeans`](@ref) or
+[`KMedoids`](@ref).
+
+In MLJ or MLJBase, create a machine with
+
+    mach = machine(model)
+
+# Hyper-parameters
+
+- `radius=1.0`: query radius.
+
+- `leafsize=20`: number of points binned in each leaf node of the nearest neighbor k-d
+  tree.
+
+- `min_neighbors=1`: minimum number of a core point neighbors.
+
+- `min_cluster_size=1`: minimum number of points in a valid cluster.
+
+
+# Operations
+
+- `predict(mach, X)`: return cluster label assignments, as an unordered
+  `CategoricalVector`. Here `X` is any table of input features (eg, a `DataFrame`) whose
+  columns are of scitype `Continuous`; check column scitypes with `schema(X)`. Note that
+  points of type `noise` will always get a label of `0`.
+
+
+# Report
+
+After calling `predict(mach)`, the fields of `report(mach)`  are:
+
+- `point_types`: A `CategoricalVector` with the DBSCAN point type classification, one
+  element per row of `X`. Elements are either `'C'`" (core), `'B'` (boundary), or `'N'`
+  (noise).
+
+- `nclusters`: The number of clusters (excluding the noise "cluster")
+
+- `cluster_labels`: The unique list of cluster labels
+
+- `clusters`: A vector of `Clustering.DbscanCluster` objects from Clustering.jl, which
+  have these fields:
+
+  - `size`: number of points in a cluster (core + boundary)
+
+  - `core_indices`: indices of points in the cluster core
+
+  - `boundary_indices`: indices of points on the cluster boundary
+
+
+# Examples
+
+```
+using MLJ
+
+X, labels  = make_moons(400, noise=0.09, rng=1) # synthetic data with 2 clusters; X
+y = map(labels) do label
+    label == 0 ? "cookie" : "monster"
+end;
+y = coerce(y, Multiclass);
+
+DBSCAN = @load DBSCAN pkg=Clustering
+model = DBSCAN(radius=0.13, min_cluster_size=5)
+mach = machine(model)
+
+# compute and output cluster assignments for observations in `X`:
+yhat = predict(mach, X)
+
+# get DBSCAN point types:
+report(mach).point_types
+report(mach).nclusters
+
+# compare cluster labels with actual labels:
+compare = zip(yhat, y) |> collect;
+compare[1:10] # clusters align with classes
+
+# visualize clusters, noise in red:
+points = zip(X.x1, X.x2) |> collect
+colors = map(yhat) do i
+   i == 0 ? :red :
+   i == 1 ? :blue :
+   i == 2 ? :green :
+   i == 3 ? :yellow :
+   :black
+end
+using Plots
+scatter(points, color=colors)
+```
+
+"""
+DBSCAN
 
 end # module

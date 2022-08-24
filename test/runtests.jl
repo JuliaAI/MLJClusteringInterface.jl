@@ -64,8 +64,9 @@ end
     dbscan = DBSCAN(radius=0.1)
     yhat1, report1 = predict(dbscan, nothing, X)
     @test report1.nclusters == 5
-    @test report1.point_types == [0,0,0,0,0]
+    @test report1.point_types == fill('B', 5)
     @test Set(yhat1) == Set(unique(yhat1))
+    @test Set(report1.cluster_labels) == Set(unique(yhat1))
 
     # DbscanCluster fields:
     @test propertynames(report1.clusters[1]) == (:size, :core_indices, :boundary_indices)
@@ -74,14 +75,14 @@ end
     dbscan = DBSCAN(radius=√2+eps())
     yhat, report = predict(dbscan, nothing, X)
     @test report.nclusters == 1
-    @test report.point_types == [1,1,1,1,1]
+    @test report.point_types == fill('C', 5)
     @test length(unique(yhat)) == 1
 
     # radius < √2 && min_cluster_size = 2 ==> all points are noise
     dbscan = DBSCAN(radius=0.1, min_cluster_size=2)
     yhat, report = predict(dbscan, nothing, X)
     @test report.nclusters == 0
-    @test report.point_types == [-1,-1,-1,-1,-1]
+    @test report.point_types == fill('N', 5)
     @test length(unique(yhat)) == 1
 
     # MLJ integration:
