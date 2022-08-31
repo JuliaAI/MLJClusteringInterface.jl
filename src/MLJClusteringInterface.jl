@@ -16,7 +16,7 @@ using Distances
 
 # ===================================================================
 ## EXPORTS
-export KMeans, KMedoids, DBSCAN
+export KMeans, KMedoids, DBSCAN, HierarchicalClustering
 
 # ===================================================================
 ## CONSTANTS
@@ -169,6 +169,38 @@ end
 
 MMI.reporting_operations(::Type{<:DBSCAN}) = (:predict,)
 
+
+# # HierarchicalClustering
+@mlj_model mutable struct HierarchicalClustering <: MMI.Static
+    linkage::Symbol = :single :: (_ ∈ (:single, :average, :complete, :ward, :ward_presquared))
+    metric::SemiMetric = SqEuclidean()
+    branchorder::Symbol = :r :: (_ ∈ (:r, :barjoseph, :optimal))
+    h::Union{Nothing,Float64} = nothing
+    k::Int = 3
+    _cache = nothing
+end
+
+function compute_dendrogram(X, metric, linkage, branchorder)
+#     @info "computing dendrogram"
+    Xarray = MMI.matrix(X)
+    d = pairwise(metric, Xarray, dims = 1) # n x n
+    Cl.hclust(d, linkage = linkage, branchorder = branchorder)
+end
+
+function MMI.predict(model::HierarchicalClustering, ::Nothing, X)
+    Xhash = hash(X)
+    if model._cache === nothing || model._cache.Xhash != Xhash
+        dendrogram = compute_dendrogram(X,
+                                        model.metric,
+                                        model.linkage,
+                                        model.branchorder)
+        model._cache = (dendrogram = dendrogram, Xhash = Xhash)
+    end
+    y = Cl.cutree(model._cache.dendrogram, k = model.k, h = model.h)
+    return y, model._cache
+end
+
+MMI.reporting_operations(::Type{<:HierarchicalClustering}) = (:predict,)
 
 # # METADATA
 
