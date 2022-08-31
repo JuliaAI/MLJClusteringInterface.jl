@@ -196,8 +196,8 @@ function MMI.predict(model::HierarchicalClustering, ::Nothing, X)
                                         model.branchorder)
         model._cache = (dendrogram = dendrogram, Xhash = Xhash)
     end
-    y = Cl.cutree(model._cache.dendrogram, k = model.k, h = model.h)
-    return y, model._cache
+    yhat = MMI.categorical(Cl.cutree(model._cache.dendrogram, k = model.k, h = model.h))
+    return yhat, model._cache
 end
 
 MMI.reporting_operations(::Type{<:HierarchicalClustering}) = (:predict,)
