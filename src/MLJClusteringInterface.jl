@@ -579,10 +579,6 @@ After calling `predict(mach)`, the fields of `report(mach)`  are:
 using MLJ
 
 X, labels  = make_moons(400, noise=0.09, rng=1) # synthetic data with 2 clusters; X
-y = map(labels) do label
-    label == 0 ? "cookie" : "monster"
-end;
-y = coerce(y, Multiclass);
 
 HierarchicalClustering = @load HierarchicalClustering pkg=Clustering
 model = HierarchicalClustering(linkage = :complete)
