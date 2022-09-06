@@ -95,8 +95,25 @@ end
 
 end
 
+# # HierarchicalClustering
+
+@testset "HierarchicalClustering" begin
+    h = Inf; k = 1; linkage = :complete; bo = :optimal;
+    metric = Distances.Euclidean()
+    mach = machine(HierarchicalClustering(h = h, k = k, metric = metric,
+                                          linkage = linkage, branchorder = bo))
+    yhat = predict(mach, X)
+    @test length(union(yhat)) == 1 # uses h = Inf
+    cutter = report(mach).cutter
+    @test length(union(cutter(k = 4))) == 4 # uses k = 4
+    dendro = Clustering.hclust(Distances.pairwise(metric, hcat(X...), dims = 1),
+                               linkage = linkage, branchorder = bo)
+    @test cutter(k = 2) == Clustering.cutree(dendro, k = 2)
+    @test report(mach).dendrogram.heights == dendro.heights
+end
+
 @testset "MLJ interface" begin
-    models = [KMeans, KMedoids, DBSCAN]
+    models = [KMeans, KMedoids, DBSCAN, HierarchicalClustering]
     failures, summary = MLJTestIntegration.test(
         models,
         X;
