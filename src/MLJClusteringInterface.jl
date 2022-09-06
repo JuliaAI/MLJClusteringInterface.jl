@@ -249,9 +249,9 @@ metadata_model(
 
 metadata_model(
     HierarchicalClustering,
-    human_name = "Hierarchical clusterer",
+    human_name = "hierarchical clusterer",
     input = MMI.Table(Continuous),
-    output = MMI.Table(Continuous),
+    target = MMI.AbstractVector{<:Multiclass}
     path = "$(PKG).HierarchicalClustering"
 )
 
