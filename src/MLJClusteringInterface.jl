@@ -562,8 +562,7 @@ In MLJ or MLJBase, create a machine with
 
 - `predict(mach, X)`: return cluster label assignments, as an unordered
   `CategoricalVector`. Here `X` is any table of input features (eg, a `DataFrame`) whose
-  columns are of scitype `Continuous`; check column scitypes with `schema(X)`. Note that
-  points of type `noise` will always get a label of `0`.
+  columns are of scitype `Continuous`; check column scitypes with `schema(X)`. 
 
 
 # Report
