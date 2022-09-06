@@ -571,7 +571,7 @@ After calling `predict(mach)`, the fields of `report(mach)`  are:
 
 - `dendrogram`: the dendrogram that was computed when calling `predict`.
 
-- `cutter`: a dendrogram cutter that can be called with a height `h` or a number of clusters `k`, to obtain a new assignment of the data points to clusters.
+- `cutter`: a dendrogram cutter that can be called with a height `h` or a number of clusters `k`, to obtain a new assignment of the data points to clusters (see example below).
 
 # Examples
 
