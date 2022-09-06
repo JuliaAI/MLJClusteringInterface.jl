@@ -214,7 +214,7 @@ MMI.reporting_operations(::Type{<:HierarchicalClustering}) = (:predict,)
 # # METADATA
 
 metadata_pkg.(
-    (KMeans, KMedoids, DBSCAN),
+    (KMeans, KMedoids, DBSCAN, HierarchicalClustering),
     name="Clustering",
     uuid="aaaa29a8-35af-508c-8bc3-b662a17a0fe5",
     url="https://github.com/JuliaStats/Clustering.jl",
@@ -251,7 +251,6 @@ metadata_model(
     HierarchicalClustering,
     human_name = "hierarchical clusterer",
     input = MMI.Table(Continuous),
-    target = MMI.AbstractVector{<:Multiclass}
     path = "$(PKG).HierarchicalClustering"
 )
 
@@ -549,20 +548,22 @@ In MLJ or MLJBase, create a machine with
 
 - `linkage = :single`: linkage method (:single, :average, :complete, :ward, :ward_presquared)
 
-- `metrid = SqEuclidean`: metric (see `Distances.jl` for available metrics)
+- `metric = SqEuclidean`: metric (see `Distances.jl` for available metrics)
 
 - `branchorder = :r`: branchorder (:r, :barjoseph, :optimal)
 
 - `h = nothing`: height at which the dendrogram is cut
 
-- `k = 3`: number of clusters; this is ignored, if `h != nothing`.
+- `k = 3`: number of clusters.
+
+If both `k` and `h` are specified, it is guaranteed that the number of clusters is not less than `k` and their height is not above `h`.
 
 
 # Operations
 
 - `predict(mach, X)`: return cluster label assignments, as an unordered
   `CategoricalVector`. Here `X` is any table of input features (eg, a `DataFrame`) whose
-  columns are of scitype `Continuous`; check column scitypes with `schema(X)`. 
+  columns are of scitype `Continuous`; check column scitypes with `schema(X)`.
 
 
 # Report
