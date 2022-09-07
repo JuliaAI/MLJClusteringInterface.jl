@@ -38,7 +38,7 @@ function MMI.fit(model::KMeans, verbosity::Int, X)
     # NOTE: using transpose here to get a LinearAlgebra.Transpose object
     # which Kmeans can handle.
     Xarray = transpose(MMI.matrix(X))
-    result = Cl.kmeans(Xarray, model.k; distance=model.metric)
+    result = Cl.kmeans(Xarray, model.k; distance=model.metric, init=model.init)
     cluster_labels = MMI.categorical(1:model.k)
     fitresult = (result.centers, cluster_labels) # centers (p x k)
     cache = nothing
@@ -291,6 +291,9 @@ Train the machine using `fit!(mach, rows=...)`.
 
 - `metric::SemiMetric=Distances.SqEuclidean`: The metric used to calculate the
   clustering. Must have type `PreMetric` from Distances.jl.
+
+- `init = :kmpp`: how cluster seeds should be initialized.
+   See [documentation of Clustering.jl](https://juliastats.org/Clustering.jl/stable/kmeans.html#Clustering.kmeans).
 
 
 # Operations

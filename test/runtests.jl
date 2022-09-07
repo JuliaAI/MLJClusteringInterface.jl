@@ -26,6 +26,14 @@ X, y = @load_crabs
     p = predict(barekm, fitresult, X)
     @test argmin(R[1, :]) == p[1]
     @test argmin(R[10, :]) == p[10]
+
+    init = 1:3
+    km = KMeans(init = init)
+    fitresult, cache, report = fit(km, 1, X)
+    p = predict(km, fitresult, X)
+
+    km_result = Clustering.kmeans(X_array', 3, init = init)
+    @test p == km_result.assignments
 end
 
 
