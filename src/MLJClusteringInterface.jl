@@ -292,7 +292,12 @@ Train the machine using `fit!(mach, rows=...)`.
 - `metric::SemiMetric=Distances.SqEuclidean`: The metric used to calculate the
   clustering. Must have type `PreMetric` from Distances.jl.
 
-- `init = :kmpp`: how cluster seeds should be initialized.
+- `init = :kmpp`: One of the following options to indicate how cluster seeds should be initialized:
+   - `:kmpp`: KMeans++ 
+   - `:kmenc`: K-medoids initialization based on centrality
+   - `:rand`: random
+   - an instance of `Clustering.SeedingAlgorithm` from Clustering.jl
+   - an integer vector of length `k` that provides the indices of points to use as initial cluster centers.
    See [documentation of Clustering.jl](https://juliastats.org/Clustering.jl/stable/kmeans.html#Clustering.kmeans).
 
 
