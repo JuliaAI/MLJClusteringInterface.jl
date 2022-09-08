@@ -67,6 +67,7 @@ end
 @mlj_model mutable struct KMedoids <: MMI.Unsupervised
     k::Int = 3::(_ ≥ 2)
     metric::SemiMetric = SqEuclidean()
+    init = :kmpp
 end
 
 function MMI.fit(model::KMedoids, verbosity::Int, X)
@@ -75,7 +76,7 @@ function MMI.fit(model::KMedoids, verbosity::Int, X)
     Xarray = MMI.matrix(X, transpose=true)
     # cost matrix: all the pairwise distances
     cost_array = pairwise(model.metric, Xarray, dims=2) # n x n
-    result = Cl.kmedoids(cost_array, model.k)
+    result = Cl.kmedoids(cost_array, model.k, init = model.init)
     cluster_labels = MMI.categorical(1:model.k)
     fitresult = (view(Xarray, :, result.medoids), cluster_labels) # medoids
     cache = nothing
@@ -293,7 +294,7 @@ Train the machine using `fit!(mach, rows=...)`.
   clustering. Must have type `PreMetric` from Distances.jl.
 
 - `init = :kmpp`: One of the following options to indicate how cluster seeds should be initialized:
-   - `:kmpp`: KMeans++ 
+   - `:kmpp`: KMeans++
    - `:kmenc`: K-medoids initialization based on centrality
    - `:rand`: random
    - an instance of `Clustering.SeedingAlgorithm` from Clustering.jl
@@ -378,6 +379,16 @@ Train the machine using `fit!(mach, rows=...)`.
 
 - `metric::SemiMetric=Distances.SqEuclidean`: The metric used to calculate the
   clustering. Must have type `PreMetric` from Distances.jl.
+
+- `init` (defaults to `:kmpp`): how medoids should be initialized, could
+   be one of the following:
+   - `:kmpp`: KMeans++
+   - `:kmenc`: K-medoids initialization based on centrality
+   - `:rand`: random
+   - an instance of `Clustering.SeedingAlgorithm` from Clustering.jl
+   - an integer vector of length `k` that provides the indices of points to
+     use as initial medoids.
+   See [documentation of Clustering.jl](https://juliastats.org/Clustering.jl/stable/kmedoids.html#Clustering.kmedoids).
 
 # Operations
 
