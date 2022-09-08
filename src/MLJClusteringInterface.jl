@@ -198,7 +198,7 @@ function (cutter::DendrogramCutter)(; h = nothing, k = 3)
     MMI.categorical(Cl.cutree(cutter.dendrogram, k = k, h = h))
 end
 function Base.show(io::IO, ::DendrogramCutter)
-    print(io, "Dendrogram Cutter.")
+    print(io, "Dendrogram Cutter (callable with keyword arguments `k`, `h`)")
 end
 
 function MMI.predict(model::HierarchicalClustering, ::Nothing, X)
