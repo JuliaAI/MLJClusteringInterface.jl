@@ -3,7 +3,7 @@ import Distances
 import LinearAlgebra: norm
 
 using MLJBase
-using MLJTestIntegration
+using MLJTestInterface
 using MLJClusteringInterface
 using Random: seed!
 using Test
@@ -122,11 +122,11 @@ end
 
 @testset "MLJ interface" begin
     models = [KMeans, KMedoids, DBSCAN, HierarchicalClustering]
-    failures, summary = MLJTestIntegration.test(
+    failures, summary = MLJTestInterface.test(
         models,
         X;
         mod=@__MODULE__,
-        verbosity=0,
+        verbosity=0, # bump to debug
         throw=false, # set to true to debug
     )
     @test isempty(failures)

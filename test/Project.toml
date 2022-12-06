@@ -3,9 +3,6 @@ Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 Distances = "b4f34e82-e78d-54a5-968a-f98e89d6e8f7"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MLJBase = "a7f614a8-145f-11e9-1d2a-a57a1082229d"
-MLJTestIntegration = "697918b4-fdc1-4f9e-8ff9-929724cee270"
+MLJTestInterface = "72560011-54dd-4dc2-94f3-c5de45b75ecd"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-
-[compat]
-MLJTestIntegration = "0.2.2"
