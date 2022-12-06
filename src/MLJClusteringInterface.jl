@@ -35,9 +35,7 @@ const PKG = "MLJClusteringInterface"
 end
 
 function MMI.fit(model::KMeans, verbosity::Int, X)
-    # NOTE: using transpose here to get a LinearAlgebra.Transpose object
-    # which Kmeans can handle.
-    Xarray = transpose(MMI.matrix(X))
+    Xarray = MMI.matrix(X)'
     result = Cl.kmeans(Xarray, model.k; distance=model.metric, init=model.init)
     cluster_labels = MMI.categorical(1:model.k)
     fitresult = (result.centers, cluster_labels) # centers (p x k)
@@ -55,7 +53,7 @@ function MMI.transform(model::KMeans, fitresult, X)
     # pairwise distance from samples to centers
     X̃ = pairwise(
         model.metric,
-        transpose(MMI.matrix(X)),
+        MMI.matrix(X)',
         fitresult[1],
         dims=2
     )
@@ -71,9 +69,7 @@ end
 end
 
 function MMI.fit(model::KMedoids, verbosity::Int, X)
-    # NOTE: using transpose=true will materialize the transpose (~ permutedims), KMedoids
-    # does not yet accept LinearAlgebra.Transpose
-    Xarray = MMI.matrix(X, transpose=true)
+    Xarray = MMI.matrix(X)'
     # cost matrix: all the pairwise distances
     cost_array = pairwise(model.metric, Xarray, dims=2) # n x n
     result = Cl.kmedoids(cost_array, model.k, init = model.init)
@@ -93,7 +89,7 @@ function MMI.transform(model::KMedoids, fitresult, X)
     # pairwise distance from samples to medoids
     X̃ = pairwise(
         model.metric,
-        MMI.matrix(X, transpose=true),
+        MMI.matrix(X)',
         fitresult[1], dims=2
     )
     return MMI.table(X̃, prototype=X)
