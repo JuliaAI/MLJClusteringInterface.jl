@@ -139,7 +139,7 @@ function MMI.predict(model::DBSCAN, ::Nothing, X)
         leafsize=model.leafsize,
         min_neighbors=model.min_neighbors,
         min_cluster_size=model.min_cluster_size,
-    )
+    ).clusters
     nclusters = length(clusters)
 
     # assignments and point types
