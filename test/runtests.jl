@@ -5,10 +5,11 @@ import LinearAlgebra: norm
 using MLJBase
 using MLJTestInterface
 using MLJClusteringInterface
-using Random: seed!
+using StableRNGs
+using Random
 using Test
 
-seed!(132442)
+srng(n) = StableRNGs.StableRNG(n)
 X, y = @load_crabs
 
 
@@ -59,6 +60,35 @@ end
 
 @testset "DBSCAN" begin
 
+    # test interface is faithful on some synthetic data:
+    X, _ = make_moons(500, rng=srng(123))
+    dbscan = DBSCAN(radius=0.15, min_neighbors=3)
+    yhat3, _report = predict(dbscan, nothing, X)
+    Xarray = MLJBase.matrix(X)'
+    clusters = Clustering.dbscan(
+        Xarray,
+        dbscan.radius;
+        leafsize=dbscan.leafsize,
+        min_neighbors=dbscan.min_neighbors,
+        min_cluster_size=dbscan.min_cluster_size,
+    ).clusters
+    noisy_indices = Set(1:length(y)) # initialization
+    for (k, cluster) in enumerate(clusters)
+        for i in cluster.core_indices
+            delete!(noisy_indices, i)
+            @test _report.point_types[i] == 'C'
+            @test yhat3[i] == k
+        end
+        for i in cluster.boundary_indices
+            delete!(noisy_indices, i)
+            @test _report.point_types[i] == 'B'
+            @test yhat3[i] == k
+        end
+    end
+    @test all(noisy_indices) do i
+        _report.point_types[i] == 'N' && yhat3[i] == 0
+    end
+
     # five spot pattern
     X = [
         0.0 0.0
@@ -72,7 +102,7 @@ end
     dbscan = DBSCAN(radius=0.1)
     yhat1, report1 = predict(dbscan, nothing, X)
     @test report1.nclusters == 5
-    @test report1.point_types == fill('B', 5)
+    @test report1.point_types == fill('C', 5)
     @test Set(yhat1) == Set(unique(yhat1))
     @test Set(report1.cluster_labels) == Set(unique(yhat1))
 
