@@ -240,14 +240,14 @@ metadata_model(
     DBSCAN,
     human_name = "DBSCAN clusterer (density-based spatial clustering of "*
     "applications with noise)",
-    input = MMI.Table(Continuous),
+    input_scitype = Tuple{MMI.Table(Continuous)},
     path = "$(PKG).DBSCAN"
 )
 
 metadata_model(
     HierarchicalClustering,
     human_name = "hierarchical clusterer",
-    input = MMI.Table(Continuous),
+    input_scitype = Tuple{MMI.Table(Continuous)},
     path = "$(PKG).HierarchicalClustering"
 )
 
