@@ -361,8 +361,9 @@ point and the closest *medoid* is minimal.
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
-
-    mach = machine(model, X)
+```
+mach = machine(model, X)
+```
 
 Here:
 
@@ -455,8 +456,9 @@ there is no training data. For clusterers that do generalize, see [`KMeans`](@re
 [`KMedoids`](@ref).
 
 In MLJ or MLJBase, create a machine with
-
-    mach = machine(model)
+```
+mach = machine(model)
+```
 
 # Hyper-parameters
 
@@ -558,9 +560,9 @@ there is no training data. For clusterers that do generalize, see [`KMeans`](@re
 [`KMedoids`](@ref).
 
 In MLJ or MLJBase, create a machine with
-
-    mach = machine(model)
-
+```
+mach = machine(model)
+```
 # Hyper-parameters
 
 - `linkage = :single`: linkage method (:single, :average, :complete, :ward, :ward_presquared)
