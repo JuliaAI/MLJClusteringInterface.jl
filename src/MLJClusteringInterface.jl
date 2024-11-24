@@ -313,7 +313,7 @@ metadata_model(
 metadata_model(
     AffinityPropagation,
     human_name = "Affinity Propagation clusterer",
-    input_scitype = Tuple{MMI.Table(Continuous)},  # Not sure about this part
+    input_scitype = MMI.Table(Continuous),
     path = "$(PKG).AffinityPropagation"
 )
 
