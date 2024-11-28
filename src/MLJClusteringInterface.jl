@@ -265,6 +265,7 @@ algorithm that solves the following optimization problem:
 ```math
 \\text{minimize} \\ \\sum_{i=1}^n \\| \\mathbf{x}_i - \\boldsymbol{\\mu}_{z_i} \\|^2 \\ \\text{w.r.t.} \\ (\\boldsymbol{\\mu}, z)
 ```
+
 Here, ``\\boldsymbol{\\mu}_k`` is the center of the ``k``-th cluster, and
 ``z_i`` is an index of the cluster for ``i``-th point ``\\mathbf{x}_i``.
 
@@ -272,8 +273,9 @@ Here, ``\\boldsymbol{\\mu}_k`` is the center of the ``k``-th cluster, and
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
-
-    mach = machine(model, X)
+```
+mach = machine(model, X)
+```
 
 Here:
 
@@ -322,7 +324,7 @@ The fields of `report(mach)` are:
 
 # Examples
 
-```
+```julia
 using MLJ
 KMeans = @load KMeans pkg=Clustering
 
@@ -359,8 +361,9 @@ point and the closest *medoid* is minimal.
 # Training data
 
 In MLJ or MLJBase, bind an instance `model` to data with
-
-    mach = machine(model, X)
+```
+mach = machine(model, X)
+```
 
 Here:
 
@@ -410,7 +413,7 @@ The fields of `report(mach)` are:
 
 # Examples
 
-```
+```julia
 using MLJ
 KMedoids = @load KMedoids pkg=Clustering
 
@@ -453,8 +456,9 @@ there is no training data. For clusterers that do generalize, see [`KMeans`](@re
 [`KMedoids`](@ref).
 
 In MLJ or MLJBase, create a machine with
-
-    mach = machine(model)
+```
+mach = machine(model)
+```
 
 # Hyper-parameters
 
@@ -500,7 +504,7 @@ After calling `predict(mach)`, the fields of `report(mach)`  are:
 
 # Examples
 
-```
+```julia
 using MLJ
 
 X, labels  = make_moons(400, noise=0.09, rng=1) # synthetic data with 2 clusters; X
@@ -556,9 +560,9 @@ there is no training data. For clusterers that do generalize, see [`KMeans`](@re
 [`KMedoids`](@ref).
 
 In MLJ or MLJBase, create a machine with
-
-    mach = machine(model)
-
+```
+mach = machine(model)
+```
 # Hyper-parameters
 
 - `linkage = :single`: linkage method (:single, :average, :complete, :ward, :ward_presquared)
@@ -591,7 +595,7 @@ After calling `predict(mach)`, the fields of `report(mach)`  are:
 
 # Examples
 
-```
+```julia
 using MLJ
 
 X, labels  = make_moons(400, noise=0.09, rng=1) # synthetic data with 2 clusters; X
