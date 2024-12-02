@@ -95,69 +95,9 @@ function MMI.transform(model::KMedoids, fitresult, X)
     return MMI.table(X̃, prototype=X)
 end
 
-# # AFFINITY_PROPAGATION
+# # PREDICT FOR K_MEANS AND K_MEDOIDS
 
-@mlj_model mutable struct AffinityPropagation <: MMI.Unsupervised
-    damp::Float64 = 0.5::(0.0 ≤ _ < 1.0)
-    maxiter::Int = 200::(_ > 0)
-    tol::Float64 = 1e-6::(_ > 0)
-    preference::Union{Nothing,Float64} = nothing
-    metric::SemiMetric = SqEuclidean()
-end
-
-function MMI.fit(model::AffinityPropagation, verbosity::Int, X)
-    Xarray = MMI.matrix(X)'
-
-    # Compute similarity matrix using negative pairwise distances
-    S = -pairwise(model.metric, Xarray, dims=2)
-
-    # Set preferences on diagonal if specified
-    if !isnothing(model.preference)
-        fill!(view(S, diagind(S)), model.preference)
-    end
-
-    result = Cl.affinityprop(
-        S,
-        maxiter=model.maxiter,
-        tol=model.tol,
-        damp=model.damp
-    )
-
-    # Get number of clusters and labels
-    exemplars = result.exemplars
-    k = length(exemplars)
-    cluster_labels = MMI.categorical(1:k)
-
-    # Store exemplar points as centers (similar to KMeans/KMedoids)
-    centers = view(Xarray, :, exemplars)
-
-    fitresult = (centers, cluster_labels)
-    cache = nothing
-    report = (
-        assignments=result.assignments,
-        cluster_labels=cluster_labels,
-        iterations=result.iterations,
-        converged=result.converged
-    )
-
-    return fitresult, cache, report
-end
-
-MMI.fitted_params(::AffinityPropagation, fitresult) = (exemplars=fitresult[1],)
-
-function MMI.transform(model::AffinityPropagation, fitresult, X)
-    # negative pairwise distance from samples to exemplars
-    X̃ = -pairwise(
-        model.metric,
-        MMI.matrix(X)',
-        fitresult[1], dims=2
-    )
-    return MMI.table(X̃, prototype=X)
-end
-
-# # PREDICT FOR K_MEANS, K_MEDOIDS and AFFINITY_PROPAGATION
-
-function MMI.predict(model::Union{KMeans,KMedoids,AffinityPropagation}, fitresult, Xnew)
+function MMI.predict(model::Union{KMeans,KMedoids}, fitresult, Xnew)
     locations, cluster_labels = fitresult
     Xarray = MMI.matrix(Xnew)
     (n, p), k = size(Xarray), model.k
@@ -266,6 +206,55 @@ function MMI.predict(model::HierarchicalClustering, ::Nothing, X)
 end
 
 MMI.reporting_operations(::Type{<:HierarchicalClustering}) = (:predict,)
+
+# # AFFINITY_PROPAGATION
+
+@mlj_model mutable struct AffinityPropagation <: MMI.Static
+    damp::Float64 = 0.5::(0.0 ≤ _ < 1.0)
+    maxiter::Int = 200::(_ > 0)
+    tol::Float64 = 1e-6::(_ > 0)
+    preference::Union{Nothing,Float64} = nothing
+    metric::SemiMetric = SqEuclidean()
+end
+
+function MMI.predict(model::AffinityPropagation, ::Nothing, X)
+    Xarray = MMI.matrix(X)'
+
+    # Compute similarity matrix using negative pairwise distances
+    S = -pairwise(model.metric, Xarray, dims=2)
+
+    # Set preferences on diagonal if specified
+    if !isnothing(model.preference)
+        fill!(view(S, diagind(S)), model.preference)
+    end
+
+    result = Cl.affinityprop(
+        S,
+        maxiter=model.maxiter,
+        tol=model.tol,
+        damp=model.damp
+    )
+
+    # Get number of clusters and labels
+    exemplars = result.exemplars
+    k = length(exemplars)
+    cluster_labels = MMI.categorical(1:k)
+
+    # Store exemplar points as centers (similar to KMeans/KMedoids)
+    centers = view(Xarray, :, exemplars)
+
+    report = (
+        exemplars=exemplars,
+        centers=centers,
+        cluster_labels=cluster_labels,
+        iterations=result.iterations,
+        converged=result.converged
+    )
+
+    return MMI.caterogical(result.assignments), report
+end
+
+MMI.reporting_operations(::Type{<:AffinityPropagation}) = (:predict,)
 
 # # METADATA
 
