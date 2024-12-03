@@ -308,11 +308,6 @@ metadata_model(
 )
 
 """
-$(MMI.doc_header(AffinityPropagation))
-To be added later!
-"""
-
-"""
 $(MMI.doc_header(KMeans))
 
 [K-means](http://en.wikipedia.org/wiki/K_means) is a classical method for
@@ -674,5 +669,74 @@ report(mach).cutter(h = 2.5)
 
 """
 HierarchicalClustering
+
+"""
+$(MMI.doc_header(AffinityPropagation))
+
+[Affinity Propagation](https://en.wikipedia.org/wiki/Affinity_propagation) is a clustering algorithm based on the concept of "message passing" between data points. More information is available at the [Clustering.jl documentation](https://juliastats.org/Clustering.jl/stable/index.html). Use `predict` to get cluster assignments. Indices of the exemplars, their values, etc, are accessed from the machine report (see below).
+
+This is a static implementation, i.e., it does not generalize to new data instances, and
+there is no training data. For clusterers that do generalize, see [`KMeans`](@ref) or
+[`KMedoids`](@ref).
+
+In MLJ or MLJBase, create a machine with
+
+    mach = machine(model)
+
+# Hyper-parameters
+
+- `damp = 0.5`: damping factor
+
+- `maxiter = 200`: maximum number of iteration
+
+- `tol = 1e-6`: tolerance for converenge
+
+- `preference = nothing`: the value of the diagonal elements of the similarity matrix
+
+- `metric = SqEuclidean`: metric (see `Distances.jl` for available metrics)
+
+# Operations
+
+- `predict(mach, X)`: return cluster label assignments, as an unordered
+  `CategoricalVector`. Here `X` is any table of input features (eg, a `DataFrame`) whose
+  columns are of scitype `Continuous`; check column scitypes with `schema(X)`.
+
+# Report
+
+After calling `predict(mach)`, the fields of `report(mach)`  are:
+
+- exemplars: indices of the data picked as exemplars in `X`
+
+- centers: positions of the exemplars in the feature space
+
+- cluster_labels: labels of clusters given to each datum in `X`
+
+- iterations: the number of iteration run by the algorithm
+
+- converged: whether or not the algorithm converges by the maximum iteration
+
+# Examples
+
+```
+using MLJ, MLJClusteringInterface
+
+X, labels = make_moons(400, noise=0.9, rng=1)
+
+AffinityPropagation = @load AffinityPropagation pkg=Clustering
+model = AffinityPropagation(preferences=-10.0)
+mach = machine(model)
+
+# compute and output cluster assignments for observations in `X`:
+yhat = predict(mach, X)
+
+# Get the positions of the exemplars
+report(mach).centers
+
+# Plot clustering result
+using GLMakie
+scatter(MLJ.matrix(X)', color=yhat.refs)
+```
+"""
+AffinityPropagation
 
 end # module
