@@ -14,6 +14,7 @@ import MLJModelInterface: Continuous, Count, Finite, Multiclass, Table, OrderedF
 
 using Distances
 using LinearAlgebra
+using StatsBase
 
 # ===================================================================
 ## EXPORTS
@@ -224,10 +225,17 @@ function MMI.predict(model::AffinityPropagation, ::Nothing, X)
     # Compute similarity matrix using negative pairwise distances
     S = -pairwise(model.metric, Xarray, dims=2)
 
-    # Set preferences on diagonal if specified
-    if !isnothing(model.preference)
-        fill!(view(S, diagind(S)), model.preference)
+    diagonal_element = if !isnothing(model.preference)
+        model.preference
+    else
+        # Get the median out of all pairs of similarity, that is, values above
+        # the diagonal line.
+        # Such default choice is mentioned in the algorithm's wiki article
+        iuppertri = triu!(trues(size(S)),1)
+        median(S[iuppertri])
     end
+
+    fill!(view(S, diagind(S)), diagonal_element)
 
     result = Cl.affinityprop(
         S,
