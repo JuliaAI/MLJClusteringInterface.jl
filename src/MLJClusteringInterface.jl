@@ -13,6 +13,7 @@ import MLJModelInterface: Continuous, Count, Finite, Multiclass, Table, OrderedF
     @mlj_model, metadata_model, metadata_pkg
 
 using Distances
+using LinearAlgebra
 
 # ===================================================================
 ## EXPORTS
@@ -251,7 +252,7 @@ function MMI.predict(model::AffinityPropagation, ::Nothing, X)
         converged=result.converged
     )
 
-    return MMI.caterogical(result.assignments), report
+    return MMI.categorical(result.assignments), report
 end
 
 MMI.reporting_operations(::Type{<:AffinityPropagation}) = (:predict,)
