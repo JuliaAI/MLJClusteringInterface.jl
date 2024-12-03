@@ -723,7 +723,7 @@ using MLJ, MLJClusteringInterface
 X, labels = make_moons(400, noise=0.9, rng=1)
 
 AffinityPropagation = @load AffinityPropagation pkg=Clustering
-model = AffinityPropagation(preferences=-10.0)
+model = AffinityPropagation(preference=-10.0)
 mach = machine(model)
 
 # compute and output cluster assignments for observations in `X`:
