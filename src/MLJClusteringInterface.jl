@@ -726,7 +726,7 @@ After calling `predict(mach)`, the fields of `report(mach)`  are:
 # Examples
 
 ```
-using MLJ, MLJClusteringInterface
+using MLJ
 
 X, labels = make_moons(400, noise=0.9, rng=1)
 
