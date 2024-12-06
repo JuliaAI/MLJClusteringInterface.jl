@@ -701,7 +701,7 @@ In MLJ or MLJBase, create a machine with
 
 - `preference = nothing`: the value of the diagonal elements of the similarity matrix
 
-- `metric = SqEuclidean`: metric (see `Distances.jl` for available metrics)
+- `metric = Distances.SqEuclidean()`: metric (see `Distances.jl` for available metrics)
 
 # Operations
 
