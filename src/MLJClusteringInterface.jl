@@ -699,7 +699,7 @@ In MLJ or MLJBase, create a machine with
 
 - `tol = 1e-6`: tolerance for converenge
 
-- `preference = nothing`: the value of the diagonal elements of the similarity matrix
+- `preference = nothing`: the (single float) value of the diagonal elements of the similarity matrix. If unspecified, choose median (negative) similarity of all pairs as mentioned [here](https://en.wikipedia.org/wiki/Affinity_propagation#Algorithm)
 
 - `metric = Distances.SqEuclidean()`: metric (see `Distances.jl` for available metrics)
 
