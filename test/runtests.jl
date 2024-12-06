@@ -150,8 +150,40 @@ end
     @test report(mach).dendrogram.heights == dendro.heights
 end
 
+# # AffinityPropagation
+
+@testset "AffinityPropagation" begin
+    X = table(stack(Iterators.partition(0.5:0.5:20, 5))')
+
+    # Test case 1: preference == median (negative) similarity (i.e. unspecified)
+    mach = machine(AffinityPropagation())
+
+    yhat = predict(mach, X)
+    @test yhat == [1, 1, 1, 1, 2, 2, 2, 2]
+
+    _report = report(mach)
+    @test _report.exemplars == [2, 7]
+    @test _report.centers == [3.0 15.5; 3.5 16.0; 4.0 16.5; 4.5 17.0; 5.0 17.5]
+    @test _report.cluster_labels == [1, 2]
+    @test _report.iterations == 50
+    @test _report.converged == true
+
+    # Test case 2: |preference| too large
+    mach2 = machine(AffinityPropagation(preference=-20.0))
+
+    yhat = predict(mach2, X)
+    @test yhat == [1, 2, 3, 4, 5, 6, 7, 8]
+
+    _report = report(mach2)
+    @test _report.exemplars == [1, 2, 3, 4, 5, 6, 7, 8]
+    @test _report.centers == matrix(X)'
+    @test _report.cluster_labels == [1, 2, 3, 4, 5, 6, 7, 8]
+    @test _report.iterations == 32
+    @test _report.converged == true
+end
+
 @testset "MLJ interface" begin
-    models = [KMeans, KMedoids, DBSCAN, HierarchicalClustering]
+    models = [KMeans, KMedoids, DBSCAN, HierarchicalClustering, AffinityPropagation]
     failures, summary = MLJTestInterface.test(
         models,
         X;
