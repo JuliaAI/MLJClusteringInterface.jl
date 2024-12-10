@@ -13,10 +13,12 @@ import MLJModelInterface: Continuous, Count, Finite, Multiclass, Table, OrderedF
     @mlj_model, metadata_model, metadata_pkg
 
 using Distances
+using LinearAlgebra
+using StatsBase
 
 # ===================================================================
 ## EXPORTS
-export KMeans, KMedoids, DBSCAN, HierarchicalClustering
+export KMeans, KMedoids, AffinityPropagation, DBSCAN, HierarchicalClustering
 
 # ===================================================================
 ## CONSTANTS
@@ -94,7 +96,6 @@ function MMI.transform(model::KMedoids, fitresult, X)
     )
     return MMI.table(X̃, prototype=X)
 end
-
 
 # # PREDICT FOR K_MEANS AND K_MEDOIDS
 
@@ -208,10 +209,66 @@ end
 
 MMI.reporting_operations(::Type{<:HierarchicalClustering}) = (:predict,)
 
+# # AFFINITY_PROPAGATION
+
+@mlj_model mutable struct AffinityPropagation <: MMI.Static
+    damp::Float64 = 0.5::(0.0 ≤ _ < 1.0)
+    maxiter::Int = 200::(_ > 0)
+    tol::Float64 = 1e-6::(_ > 0)
+    preference::Union{Nothing,Float64} = nothing
+    metric::SemiMetric = SqEuclidean()
+end
+
+function MMI.predict(model::AffinityPropagation, ::Nothing, X)
+    Xarray = MMI.matrix(X)'
+
+    # Compute similarity matrix using negative pairwise distances
+    S = -pairwise(model.metric, Xarray, dims=2)
+
+    diagonal_element = if !isnothing(model.preference)
+        model.preference
+    else
+        # Get the median out of all pairs of similarity, that is, values above
+        # the diagonal line.
+        # Such default choice is mentioned in the algorithm's wiki article
+        iuppertri = triu!(trues(size(S)),1)
+        median(S[iuppertri])
+    end
+
+    fill!(view(S, diagind(S)), diagonal_element)
+
+    result = Cl.affinityprop(
+        S,
+        maxiter=model.maxiter,
+        tol=model.tol,
+        damp=model.damp
+    )
+
+    # Get number of clusters and labels
+    exemplars = result.exemplars
+    k = length(exemplars)
+    cluster_labels = MMI.categorical(1:k)
+
+    # Store exemplar points as centers (similar to KMeans/KMedoids)
+    centers = view(Xarray, :, exemplars)
+
+    report = (
+        exemplars=exemplars,
+        centers=centers,
+        cluster_labels=cluster_labels,
+        iterations=result.iterations,
+        converged=result.converged
+    )
+
+    return MMI.categorical(result.assignments), report
+end
+
+MMI.reporting_operations(::Type{<:AffinityPropagation}) = (:predict,)
+
 # # METADATA
 
 metadata_pkg.(
-    (KMeans, KMedoids, DBSCAN, HierarchicalClustering),
+    (KMeans, KMedoids, DBSCAN, HierarchicalClustering, AffinityPropagation),
     name="Clustering",
     uuid="aaaa29a8-35af-508c-8bc3-b662a17a0fe5",
     url="https://github.com/JuliaStats/Clustering.jl",
@@ -249,6 +306,13 @@ metadata_model(
     human_name = "hierarchical clusterer",
     input_scitype = Tuple{MMI.Table(Continuous)},
     path = "$(PKG).HierarchicalClustering"
+)
+
+metadata_model(
+    AffinityPropagation,
+    human_name = "Affinity Propagation clusterer",
+    input_scitype = MMI.Table(Continuous),
+    path = "$(PKG).AffinityPropagation"
 )
 
 """
@@ -617,5 +681,74 @@ report(mach).cutter(h = 2.5)
 
 """
 HierarchicalClustering
+
+"""
+$(MMI.doc_header(AffinityPropagation))
+
+[Affinity Propagation](https://en.wikipedia.org/wiki/Affinity_propagation) is a clustering algorithm based on the concept of "message passing" between data points. More information is available at the [Clustering.jl documentation](https://juliastats.org/Clustering.jl/stable/index.html). Use `predict` to get cluster assignments. Indices of the exemplars, their values, etc, are accessed from the machine report (see below).
+
+This is a static implementation, i.e., it does not generalize to new data instances, and
+there is no training data. For clusterers that do generalize, see [`KMeans`](@ref) or
+[`KMedoids`](@ref).
+
+In MLJ or MLJBase, create a machine with
+
+    mach = machine(model)
+
+# Hyper-parameters
+
+- `damp = 0.5`: damping factor
+
+- `maxiter = 200`: maximum number of iteration
+
+- `tol = 1e-6`: tolerance for converenge
+
+- `preference = nothing`: the (single float) value of the diagonal elements of the similarity matrix. If unspecified, choose median (negative) similarity of all pairs as mentioned [here](https://en.wikipedia.org/wiki/Affinity_propagation#Algorithm)
+
+- `metric = Distances.SqEuclidean()`: metric (see `Distances.jl` for available metrics)
+
+# Operations
+
+- `predict(mach, X)`: return cluster label assignments, as an unordered
+  `CategoricalVector`. Here `X` is any table of input features (eg, a `DataFrame`) whose
+  columns are of scitype `Continuous`; check column scitypes with `schema(X)`.
+
+# Report
+
+After calling `predict(mach)`, the fields of `report(mach)`  are:
+
+- exemplars: indices of the data picked as exemplars in `X`
+
+- centers: positions of the exemplars in the feature space
+
+- cluster_labels: labels of clusters given to each datum in `X`
+
+- iterations: the number of iteration run by the algorithm
+
+- converged: whether or not the algorithm converges by the maximum iteration
+
+# Examples
+
+```
+using MLJ
+
+X, labels = make_moons(400, noise=0.9, rng=1)
+
+AffinityPropagation = @load AffinityPropagation pkg=Clustering
+model = AffinityPropagation(preference=-10.0)
+mach = machine(model)
+
+# compute and output cluster assignments for observations in `X`:
+yhat = predict(mach, X)
+
+# Get the positions of the exemplars
+report(mach).centers
+
+# Plot clustering result
+using GLMakie
+scatter(MLJ.matrix(X)', color=yhat.refs)
+```
+"""
+AffinityPropagation
 
 end # module
