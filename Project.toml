@@ -1,7 +1,7 @@
 name = "MLJClusteringInterface"
 uuid = "d354fa79-ed1c-40d4-88ef-b8c7bd1568af"
 authors = ["Anthony D. Blaom <anthony.blaom@gmail.com>", "Thibaut Lienart <thibaut.lienart@gmail.com>", "Okon Samuel <okonsamuel50@gmail.com>"]
-version = "0.1.12"
+version = "0.1.13"
 
 [deps]
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
